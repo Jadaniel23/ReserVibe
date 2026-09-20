@@ -7,7 +7,7 @@
 </head>
 <body><div class="site-shell"><?php require __DIR__ . '/../partials/site-header.php'; ?><main id="main-content" class="page-content"><div class="page-heading"><p class="eyebrow">Sample booking packages</p><h1>Find your kind of getaway.</h1><p>Choose a package to preview your booking estimate. Rates shown are for prototype use and require resort confirmation.</p><label class="search-field"><span class="sr-only">Search packages</span><input id="package-search" type="search" placeholder="Search packages"></label></div><div class="room-grid">
         <?php foreach ($rooms as $room): ?>
-            <article class="room-card" data-package="<?php echo htmlspecialchars($room['name'] . ' ' . $room['description']); ?>"><div class="room-image"></div><div class="room-card-content"><p class="eyebrow">Sample package</p><h2><?php echo htmlspecialchars($room['name']); ?></h2><p><?php echo htmlspecialchars($room['description']); ?></p><p><strong>₱<?php echo number_format($room['price']); ?></strong> starting estimate</p><a href="?action=book&id=<?php echo $room['id']; ?>" class="btn">Select package</a></div></article>
+            <article class="room-card" data-package="<?php echo htmlspecialchars($room['name'] . ' ' . $room['description']); ?>"><div class="room-image"></div><div class="room-card-content"><p class="eyebrow">Sample package</p><h2><?php echo htmlspecialchars($room['name']); ?></h2><p><?php echo htmlspecialchars($room['description']); ?></p><p><strong>₱<?php echo number_format($room['rate']); ?></strong> starting estimate</p><a href="?action=book&id=<?php echo $room['id']; ?>" class="btn">Select package</a></div></article>
         <?php endforeach; ?>
     </div>
 

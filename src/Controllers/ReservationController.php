@@ -3,29 +3,50 @@
 
 namespace App\Controllers;
 
+use App\Helpers\Config;
 use App\Models\Accommodation;
-use App\Models\Reservation;
 use App\Helpers\Response;
 
-class ReservationController {
-    public function showForm() {
+class ReservationController
+{
+    public function showForm()
+    {
         $id = $_GET['id'] ?? null;
         $room = $id ? Accommodation::find($id) : null;
 
-        if (!$room) {
-            die("Invalid room selected.");
+        if ($id !== null && !$room) {
+            Response::render('guest/404', []);
+            return;
         }
 
-        Response::render('guest/book', ['room' => $room]);
+        Response::render('guest/book', [
+            // Room options and add-on prices come from config/catalogue, so the
+            // form can never quote a different price than the API.
+            'room' => $room,
+            'rooms' => Accommodation::getAll(),
+            'addons' => Config::get('addons', []),
+            'settings' => [
+                'currency_symbol' => Config::get('currency_symbol', 'PHP'),
+                'deposit_rate' => Config::get('deposit_rate', 0.5),
+                'hold_minutes' => Config::get('hold_minutes', 90),
+            ],
+        ]);
     }
 
-    public function create() {
-        $resId = Reservation::create($_POST);
-
-        // Redirect to a "Success" page or just show a message
-        echo "<h1>Booking Successful!</h1>";
-        echo "<p>Your reservation ID is: <strong>$resId</strong></p>";
-        echo "<a href='?action=home'>Return Home</a>";
-        exit;
+    public function create()
+    {
+        // The real write path is POST /api/reservation/create.php, which
+        // requires a live hold. Until this controller posts there, it should
+        // not pretend a booking was stored.
+        Response::render('guest/book', [
+            'room' => null,
+            'rooms' => Accommodation::getAll(),
+            'addons' => Config::get('addons', []),
+            'settings' => [
+                'currency_symbol' => Config::get('currency_symbol', 'PHP'),
+                'deposit_rate' => Config::get('deposit_rate', 0.5),
+                'hold_minutes' => Config::get('hold_minutes', 90),
+            ],
+        ]);
     }
 }

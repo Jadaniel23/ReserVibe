@@ -3,30 +3,36 @@
 
 namespace App\Models;
 
-class Accommodation {
+use App\Repositories\AccommodationRepository;
+
+/**
+ * Thin facade over AccommodationRepository.
+ *
+ * Controllers and views keep calling Accommodation::getAll(), but the rates
+ * themselves live in data/accommodations.json and are edited in exactly one
+ * place. Nothing here duplicates data.
+ */
+class Accommodation
+{
     /**
-     * Returns a list of available rooms.
-     * Updated to match Verde Royale Resort tiers.
+     * Available rooms, cottages and gazebos.
+     *
+     * @return array<int, array<string, mixed>>
      */
-    public static function getAll() {
-        return [
-            ['id' => 1, 'name' => 'Open Cottage (10 pax)', 'price' => 1500, 'description' => 'Perfect for small groups and outdoor gatherings.'],
-            ['id' => 2, 'name' => 'Kubo Gazebo (15-20 pax)', 'price' => 2500, 'description' => 'Traditional Filipino gazebo for larger groups.'],
-            ['id' => 3, 'name' => 'Standard AC Room (2-4 pax)', 'price' => 3500, 'description' => 'Cool and comfortable room for a small family.'],
-            ['id' => 4, 'name' => 'Family AC Room (6-10 pax)', 'price' => 5500, 'description' => 'Spacious air-conditioned room for the whole family.'],
-        ];
+    public static function getAll(?string $type = null): array
+    {
+        return (new AccommodationRepository())->active($type);
     }
 
     /**
-     * Finds a specific room by ID.
+     * @return array<string, mixed>|null
      */
-    public static function find($id) {
-        $rooms = self::getAll();
-        foreach ($rooms as $room) {
-            if ($room['id'] == $id) {
-                return $room;
-            }
+    public static function find(mixed $id): ?array
+    {
+        if (!is_numeric($id)) {
+            return null;
         }
-        return null;
+
+        return (new AccommodationRepository())->find((int) $id);
     }
 }

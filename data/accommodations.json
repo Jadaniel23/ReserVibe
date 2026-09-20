@@ -1,0 +1,42 @@
+[
+    {
+        "id": 1,
+        "slug": "open-cottage",
+        "name": "Open Cottage (10 pax)",
+        "type": "cottage",
+        "capacity": 10,
+        "rate": 1500.0,
+        "description": "Perfect for small groups and outdoor gatherings.",
+        "active": true
+    },
+    {
+        "id": 2,
+        "slug": "kubo-gazebo",
+        "name": "Kubo Gazebo (15-20 pax)",
+        "type": "gazebo",
+        "capacity": 20,
+        "rate": 2500.0,
+        "description": "Traditional Filipino gazebo for larger groups.",
+        "active": true
+    },
+    {
+        "id": 3,
+        "slug": "standard-ac-room",
+        "name": "Standard AC Room (2-4 pax)",
+        "type": "room",
+        "capacity": 4,
+        "rate": 3500.0,
+        "description": "Cool and comfortable room for a small family.",
+        "active": true
+    },
+    {
+        "id": 4,
+        "slug": "family-ac-room",
+        "name": "Family AC Room (6-10 pax)",
+        "type": "room",
+        "capacity": 10,
+        "rate": 5500.0,
+        "description": "Spacious air-conditioned room for the whole family.",
+        "active": true
+    }
+]
