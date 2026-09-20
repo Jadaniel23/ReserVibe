@@ -83,6 +83,15 @@ class ReservationService
             $errors['addons'] = 'Unknown add-on code(s): ' . implode(', ', $unknown) . '.';
         }
 
+        $paymentMethodCode = Validator::in($input['payment_method'] ?? null, $this->paymentMethodCodes());
+
+        if ($paymentMethodCode === null) {
+            $errors['payment_method'] = 'Choose a payment method: '
+                . implode(', ', $this->paymentMethodCodes()) . '.';
+        }
+
+        $paymentMethod = $paymentMethodCode === null ? null : $this->paymentMethod($paymentMethodCode);
+
         $notes = Validator::text($input['notes'] ?? '', 0, 500);
 
         if ($notes === null) {
@@ -95,7 +104,16 @@ class ReservationService
 
         return JsonFileStore::withLock(
             (string) Config::get('paths.lock'),
-            function () use ($holdId, $guestName, $guestEmail, $guestPhone, $addonCodes, $notes): array {
+            function () use (
+                $holdId,
+                $guestName,
+                $guestEmail,
+                $guestPhone,
+                $addonCodes,
+                $paymentMethodCode,
+                $paymentMethod,
+                $notes
+            ): array {
                 $now = time();
 
                 $holds = $this->holdManager->sweepExpired($this->holds->all(), $now);
@@ -187,6 +205,10 @@ class ReservationService
                     'amount_paid' => 0.0,
                     'status' => ReservationRepository::STATUS_PENDING_PAYMENT,
                     'guest_status' => ReservationRepository::GUEST_RESERVED,
+                    'payment_method' => $paymentMethodCode,
+                    'payment_method_label' => (string) ($paymentMethod['label'] ?? ''),
+                    'payment_requires_proof' => (bool) ($paymentMethod['requires_proof'] ?? false),
+                    'settles_on_arrival' => (bool) ($paymentMethod['settles_on_arrival'] ?? false),
                     'notes' => $notes ?? '',
                     'created_at' => date('c', $now),
                     'updated_at' => date('c', $now),
@@ -229,5 +251,26 @@ class ReservationService
     public function find(int $id): ?array
     {
         return $this->reservations->find($id);
+    }
+
+    /** @return array<int, string> Codes the API will accept for payment_method. */
+    public function paymentMethodCodes(): array
+    {
+        return array_map(
+            static fn (array $method): string => (string) $method['code'],
+            Config::get('payment_methods', [])
+        );
+    }
+
+    /** @return array<string, mixed>|null */
+    public function paymentMethod(string $code): ?array
+    {
+        foreach (Config::get('payment_methods', []) as $method) {
+            if (($method['code'] ?? null) === $code) {
+                return $method;
+            }
+        }
+
+        return null;
     }
 }

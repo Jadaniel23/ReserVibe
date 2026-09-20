@@ -147,7 +147,7 @@ In your browser:
 |---|---|
 | <http://127.0.0.1:8000/?action=home> | The Verde Royale landing page |
 | <http://127.0.0.1:8000/?action=rooms> | 4 packages: ₱1,500 / ₱2,500 / ₱3,500 / ₱5,500 |
-| <http://127.0.0.1:8000/?action=book&id=1> | Booking form with a deposit line |
+| <http://127.0.0.1:8000/?action=book&id=1> | Booking form with a deposit line and a payment-method chooser |
 | <http://127.0.0.1:8000/api/catalog/list.php> | JSON listing 4 accommodations |
 
 **Success checklist** — all four should be true:
@@ -225,9 +225,12 @@ reference) as `hold_id`:
 
 ```bash
 curl -s -X POST -b cookies.txt -H "Content-Type: application/json" -H "X-CSRF-Token: PASTE_TOKEN" \
-  -d '{"hold_id":1,"guest_name":"Juan Dela Cruz","guest_email":"juan@example.com","guest_phone":"09171234567"}' \
+  -d '{"hold_id":1,"guest_name":"Juan Dela Cruz","guest_email":"juan@example.com","guest_phone":"09171234567","payment_method":"gcash"}' \
   http://127.0.0.1:8000/api/reservation/create.php
 ```
+
+`payment_method` is required — send one of `gcash`, `maya`, `bank_transfer`, `paypal`,
+`card` or `cash`, otherwise you get a 422 listing the valid options.
 
 Expect **HTTP 201** with a reference like `RSV-0001` and status
 `pending_payment`.
@@ -298,12 +301,25 @@ server-side cost calculation, temporary holds with atomic conflict prevention an
 lazy expiry, turning a hold into a reservation, staff-only reservation listing,
 CSRF protection on every POST, input validation.
 
+**The booking page works end to end in a browser.** Open `?action=book&id=1`, fill
+in the dates and guest details, pick a payment method, and press **Proceed to
+Payment**. The page places a real hold through the API, shows a live 90-minute
+countdown, and **I've Paid — Confirm Booking** writes the reservation. **Cancel
+Booking** releases the slot immediately, and **Return to Menu** goes back to the
+package list. If you leave the page without cancelling, the hold simply expires.
+
+**Payment methods** come from `src/Config/config.php` (the `payment_methods`
+list), so the page and the API can never disagree about what is offered:
+GCash, Maya, Bank Transfer, PayPal, Credit/Debit Card, and Cash at the Resort.
+PayPal and card are **UI-level only** — there is no real gateway, so nothing is
+charged; the chosen method is recorded on the booking. Methods that need a
+receipt are flagged `requires_proof`, which is what the upload step (Module 5)
+will use.
+
 **Not built yet:**
 
-- **The website's own booking button doesn't submit.** `booking.js` still does
-  its arithmetic client-side and opens a modal; only the terminal commands in
-  Step 6 actually write a booking. If the button "does nothing", that's expected.
-- Payment proof upload, payment verification, and balance/ledger tracking.
+- Payment proof upload and payment verification (the method is recorded, but no
+  image is uploaded yet). Balance/ledger tracking.
 - Cancellation and rescheduling.
 - Walk-in management and guest arrival status.
 - Google Calendar and email integration.

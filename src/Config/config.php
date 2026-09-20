@@ -82,6 +82,63 @@ return [
         'allowed_mime' => ['image/jpeg', 'image/png', 'image/webp'],
     ],
 
+    // Module 5 — how the guest settles the deposit.
+    //
+    // The single source of truth for "what can I pay with?". The booking view
+    // renders these options from here, and the API validates whatever the
+    // client sends against this same list, so the two can never disagree.
+    //
+    //   requires_proof     guest pays outside the system, then uploads a receipt
+    //   redirect           in production this hands off to an online gateway
+    //   settles_on_arrival nothing is collected online; the desk collects it
+    'payment_methods' => [
+        [
+            'code' => 'gcash',
+            'label' => 'GCash',
+            'group' => 'E-Wallet',
+            'requires_proof' => true,
+            'instructions' => 'Scan the GCash QR, send the deposit, then keep your receipt for verification.',
+        ],
+        [
+            'code' => 'maya',
+            'label' => 'Maya',
+            'group' => 'E-Wallet',
+            'requires_proof' => true,
+            'instructions' => 'Scan the Maya QR, send the deposit, then keep your receipt for verification.',
+        ],
+        [
+            'code' => 'bank_transfer',
+            'label' => 'Bank Transfer',
+            'group' => 'Bank',
+            'requires_proof' => true,
+            'instructions' => 'Transfer the deposit to the resort account, then keep the deposit slip.',
+        ],
+        [
+            'code' => 'paypal',
+            'label' => 'PayPal',
+            'group' => 'Online',
+            'requires_proof' => false,
+            'redirect' => true,
+            'instructions' => 'In production this hands off to PayPal to authorise the deposit, then returns here automatically.',
+        ],
+        [
+            'code' => 'card',
+            'label' => 'Credit / Debit Card',
+            'group' => 'Card',
+            'requires_proof' => false,
+            'redirect' => true,
+            'instructions' => 'In production this hands off to the secure card page. Visa and Mastercard accepted.',
+        ],
+        [
+            'code' => 'cash',
+            'label' => 'Cash at the Resort',
+            'group' => 'On-site',
+            'requires_proof' => false,
+            'settles_on_arrival' => true,
+            'instructions' => 'Nothing is collected online. Settle the deposit and balance at the front desk on arrival.',
+        ],
+    ],
+
     'paths' => [
         'root' => $root,
         'data' => $root . '/data',

@@ -41,7 +41,7 @@ Update this file when scope or architecture changes.
 | 2 | Availability Calendar | ✅ check + FullCalendar feed |
 | 3 | Online Reservation & Cost Calculation | ✅ server-side quote, 50% deposit |
 | 4 | Conflict Prevention & Temporary Holds | ✅ atomic, lazy expiry, race-tested |
-| 5 | QR Code Payment & Receipt Upload | ⬜ next |
+| 5 | QR Code Payment & Receipt Upload | 🟡 method selection + cancellation done; proof upload and staff verification pending |
 | 6 | Payment & Balance Tracking | ⬜ ledger fields already on the reservation record |
 | 7 | Cancellation & Rescheduling Engine | ⬜ |
 | 8 | Google Calendar API Integration | ⬜ |
@@ -63,6 +63,7 @@ post-stay feedback & review system with moderation and satisfaction analytics.
 | Database | **Deferred** — a JSON store stands in behind `Repositories/` | User asked to build the API first; `Repositories/` is the only layer that changes when MySQL lands |
 | Timezone | `Asia/Manila`, set in `src/Config/config.php` (overridable via `APP_TIMEZONE` in `.env`) | Hold countdowns must read in resort-local time, not hosting default |
 | Money | Server-authoritative: the client sends **add-on codes and dates, never prices** | A tampered request cannot change the total |
+| Payment methods | Declared once in `config.php` under `payment_methods`; the booking view renders them and the API validates `payment_method` against the same list | The page and the API can never disagree about what is offered, and `payment_method` is required (422 if unknown) |
 
 ### The concurrency design (the project's signature feature)
 
@@ -119,9 +120,10 @@ public/
   assets/{css,js}               style.css, booking.js, calendar.js, dashboard.js, site.js
   uploads/payment-proofs/       empty, for Module 5
 src/
-  Config/config.php             ALL tunables: deposit_rate, hold_minutes, addons, uploads, paths, timezone
+  Config/config.php             ALL tunables: deposit_rate, hold_minutes, addons, payment_methods, uploads, paths, timezone
   Config/Database.php           still a mock singleton (untouched)
   Helpers/Config.php            dot-notation reader: Config::get('uploads.max_bytes')
+  Helpers/Assets.php            versioned asset URLs: Assets::url('/assets/css/style.css') -> ?v=<mtime>
   Helpers/Validator.php         date/int/text/email/phone/in/list — null means invalid
   Helpers/Response.php          success()/error()/raw()/json()/render()/requireMethod()/requireRole()/input()
   Repositories/JsonFileStore.php      flock-based read/replace/atomicUpdate/withLock
@@ -148,8 +150,9 @@ views/{admin,staff,layouts}/    still empty
 **End-to-end test results (php -S, re-runnable — see §8):**
 
 Front-controller pages also verified: `?action=home`, `rooms`, `book&id=1|3` all 200, unknown room falls
-through to the 404 view, `?action=bogus` is a real 404, and the booking page now renders its 4 options,
-both add-ons and its hold window from config. Zero PHP warnings across every run.
+through to the 404 view, `?action=bogus` is a real 404 that now renders the *styled* 404 page (it used to
+return bare text), and the booking page renders its 4 options, both add-ons, its hold window and its 6
+payment methods from config. Zero PHP warnings across every run.
 
 | Check | Result |
 |---|---|
@@ -166,6 +169,16 @@ both add-ons and its hold window from config. Zero PHP warnings across every run
 | Release hold → re-hold same slot | 200 released → 201 granted |
 | **Two simultaneous holds, same fresh slot** | **201 + 409, exactly 1 hold written** |
 | Stale hold planted → its slot re-booked | status flips to `expired` on read, re-booking returns 201 |
+| Booking page renders the chooser | 200, 6 method cards, radios for gcash/maya/bank_transfer/paypal/card/cash |
+| `catalog/list.php` exposes `payment_methods` | 200 |
+| Booking via `payment_method: paypal` | 201, record stores `payment_method`, `payment_method_label`, `payment_requires_proof: false` |
+| Booking via `payment_method: cash` | 201, `settles_on_arrival: true` |
+| Booking with `payment_method: bitcoin` / omitted | **422** naming the valid codes |
+| Cancel releases the hold, then the same slot re-books | 200 → 201 |
+| Asset URLs carry `?v=<mtime>`, version changes on edit | `1789920255` → `1789920436` after touching style.css |
+| Versioned `/assets/css/style.css?v=…` and `/assets/js/booking.js?v=…` | 200 |
+| Unknown action `?action=bogus` | 404 **with the styled site layout** (was plain text) |
+| Invalid room id `?action=book&id=999` | 404 styled page |
 | PHP warnings/notices during the run | 0 |
 
 ## 6. Bug found and fixed: `getEnv()` was PHP's `getenv()`
@@ -245,16 +258,20 @@ Reset the demo data by writing `[]` into `data/holds.json` and `data/reservation
 
 ## 9. Roadmap — next steps
 
-1. **Module 5 — payment proof upload.** `FileUploadValidator` with real `finfo` MIME
+1. **Module 5 — payment proof upload.** Methods are chosen and recorded; what is
+   missing is the receipt itself. Needs `FileUploadValidator` with real `finfo` MIME
    sniffing, size cap and randomized filenames (settings already in config under `uploads`),
    plus `payment/upload.php`, `payment/verify.php` (staff) and the
-   `pending_payment → pending_verification → confirmed` transitions.
+   `pending_payment → pending_verification → confirmed` transitions. Only methods
+   flagged `requires_proof` should demand an image.
 2. **Module 6 — ledger.** `payment/ledger.php` and balance math off the reservation record
    (`amount_paid`, `deposit_due`, `balance_due` already exist).
 3. **Module 10 + staff surfaces.** `views/staff/` and `views/admin/` are empty;
    `dashboard.js` is 0 bytes; KPI endpoint still to write.
-4. **Wire the booking page to the API.** `booking.js` still computes totals client-side for
-   display only. It should drive hold → calculate → create and surface the countdown.
+4. ~~Wire the booking page to the API.~~ **Done** — `booking.js` now places the hold,
+   shows the countdown, confirms the booking, releases on cancel, and surfaces API
+   errors. It still computes the *display* total client-side, but the server prices the
+   booking independently and its numbers are what get stored.
 5. **Modules 7 and 9** — cancellation/reschedule engine, walk-in and guest-status toggles.
 6. **Module 8** — Google Calendar + PHPMailer. Add
    `composer require phpmailer/phpmailer` and `composer require google/apiclient`
@@ -271,9 +288,27 @@ Reset the demo data by writing `[]` into `data/holds.json` and `data/reservation
   correctly gitignored — keep it that way.
 - `X-User-Role` is trivially spoofable. It exists only to keep staff endpoints visibly
   separated so real auth is a one-place change. Do not treat it as security.
+- **PayPal and card are UI-level only.** No gateway is integrated: choosing them records
+  the method on the booking and nothing is charged. Say that plainly rather than implying
+  a working payment integration.
+- "Cancel Booking" releases the hold, but navigating away with **Return to Menu** does not —
+  the hold simply expires on its own. If that matters later, release it on `beforeunload`
+  or expire it server-side faster.
 - The role header is checked **only** in `reservation/list.php` so far — every new staff
   endpoint must add `Response::requireRole([...])` explicitly.
 - The JSON store is fine for one host. It is not a substitute for a database under real load.
+- **⚠ Concurrent editor.** Parts of this repo have been written by something other than the
+  assistant session that wrote most of this file. The `.booking-shell` rule and the
+  `!important` note in `style.css`, plus the matching wrapper in `book.php`, appeared on
+  2026-09-21 around 00:02 with no assistant write behind them, and one write was refused
+  because a file had changed underneath. A Kilo Code worktree is registered at
+  `.kilo/worktrees/quilled-swamp/` (detached HEAD at `1035b2c`). Re-read a file before
+  editing it, and settle who owns the working tree before the next round of changes — if
+  that worktree gets committed and merged, expect conflicts against uncommitted work here.
+- **Asset caching.** The PHP dev server sends no cache headers, so browsers heuristically
+  cache CSS/JS and keep serving a stale copy after an edit — this already caused one
+  confusing "my fix did nothing" round trip. `App\Helpers\Assets::url()` appends
+  `?v=<mtime>` to defeat it; use it for any new asset reference in a view.
 - `composer.lock` is tracked but `.gitignore` lists it — still unresolved; pick one policy.
 - `views/{staff,admin,layouts}` are empty, so page chrome is duplicated per view. Extract a
   layout when the staff screens land.

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1"><title>Packages | Verde Royale</title>
-    <link rel="stylesheet" href="/assets/css/style.css">
+    <link rel="stylesheet" href="<?php echo \App\Helpers\Assets::url('/assets/css/style.css'); ?>">
 </head>
 <body><div class="site-shell"><?php require __DIR__ . '/../partials/site-header.php'; ?><main id="main-content" class="page-content"><div class="page-heading"><p class="eyebrow">Sample booking packages</p><h1>Find your kind of getaway.</h1><p>Choose a package to preview your booking estimate. Rates shown are for prototype use and require resort confirmation.</p><label class="search-field"><span class="sr-only">Search packages</span><input id="package-search" type="search" placeholder="Search packages"></label></div><div class="room-grid">
         <?php foreach ($rooms as $room): ?>

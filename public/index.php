@@ -39,7 +39,10 @@ switch ($action) {
         }
         break;
     default:
+        // Render the real 404 page rather than bare text, so a mistyped URL
+        // still gives the visitor the site layout and a way back. The view
+        // exists at views/guest/404.php and is styled like the rest of the site.
         http_response_code(404);
-        echo "404 Not Found - Use ?action=home, ?action=rooms, or ?action=book";
+        Response::render('guest/404');
         break;
 }

@@ -20,11 +20,13 @@ class ReservationController
         }
 
         Response::render('guest/book', [
-            // Room options and add-on prices come from config/catalogue, so the
-            // form can never quote a different price than the API.
+            // Room options, add-on prices and payment methods all come from
+            // config/catalogue, so the form can never offer a price or a
+            // payment method the API would refuse.
             'room' => $room,
             'rooms' => Accommodation::getAll(),
             'addons' => Config::get('addons', []),
+            'paymentMethods' => Config::get('payment_methods', []),
             'settings' => [
                 'currency_symbol' => Config::get('currency_symbol', 'PHP'),
                 'deposit_rate' => Config::get('deposit_rate', 0.5),
@@ -42,6 +44,7 @@ class ReservationController
             'room' => null,
             'rooms' => Accommodation::getAll(),
             'addons' => Config::get('addons', []),
+            'paymentMethods' => Config::get('payment_methods', []),
             'settings' => [
                 'currency_symbol' => Config::get('currency_symbol', 'PHP'),
                 'deposit_rate' => Config::get('deposit_rate', 0.5),

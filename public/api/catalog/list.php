@@ -42,6 +42,7 @@ Response::success([
     'accommodations' => $accommodations,
     'types' => $repository->types(),
     'addons' => Config::get('addons', []),
+    'payment_methods' => Config::get('payment_methods', []),
     'settings' => [
         'currency' => Config::get('currency', 'PHP'),
         'currency_symbol' => Config::get('currency_symbol', 'PHP'),
