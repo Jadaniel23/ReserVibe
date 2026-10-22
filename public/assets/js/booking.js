@@ -224,7 +224,9 @@
       guest_name: $('guest-name').value.trim(),
       guest_email: $('guest-email').value.trim(),
       guest_phone: $('guest-phone').value.trim(),
+      guests: parseInt($('guest-count') ? $('guest-count').value : '1', 10),
       payment_method: method ? method.value : '',
+      agree_terms: $('agree-terms') ? $('agree-terms').checked : false,
     };
   }
 
@@ -236,6 +238,7 @@
     if (!form.guest_email) return 'Please enter an email address.';
     if (!form.guest_phone) return 'Please enter a mobile number.';
     if (!form.payment_method) return 'Please choose a payment method.';
+    if (!form.agree_terms) return 'You must agree to the House Rules and Cancellation Policy.';
 
     return null;
   }
@@ -267,6 +270,7 @@
       check_out: form.check_out,
       guest_name: form.guest_name,
       guest_contact: form.guest_phone,
+        guests: form.guests,
     });
 
     bookBtn.disabled = false;
@@ -302,12 +306,14 @@
       guest_name: form.guest_name,
       guest_email: form.guest_email,
       guest_phone: form.guest_phone,
+      guests: form.guests,
       addons: form.addons,
       payment_method: form.payment_method,
+      agree_terms: form.agree_terms,
       notes: $('notes') ? $('notes').value : '',
     });
 
-    confirmBtn.textContent = "I've Paid — Confirm Booking";
+    confirmBtn.textContent = 'Confirm Demo Reservation';
 
     if (!result.ok) {
       confirmBtn.disabled = false;
@@ -318,13 +324,7 @@
     const reservation = result.body.data.reservation;
     stopCountdown();
 
-    alertBox(
-      modalAlert,
-      'Booked. Your reference is ' + reservation.reference + ' — total ' + money(reservation.total)
-        + ', deposit ' + money(reservation.deposit_due) + ' via ' + reservation.payment_method_label + '.'
-        + (reservation.payment_requires_proof ? ' Keep your receipt: staff verify it before the booking is confirmed.' : ''),
-      'success'
-    );
+    window.location.href = '?action=confirmation&ref=' + reservation.reference;
 
     if (cancelBtn) cancelBtn.classList.add('hidden');
     if (countdownEl) countdownEl.textContent = 'confirmed';

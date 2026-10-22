@@ -75,6 +75,7 @@ class HoldManager
                 'check_out' => $checkOut,
                 'guest_name' => $meta['guest_name'] ?? null,
                 'guest_contact' => $meta['guest_contact'] ?? null,
+                'guest_count' => isset($meta['guest_count']) ? (int) $meta['guest_count'] : null,
                 'status' => HoldRepository::STATUS_ACTIVE,
                 'reservation_id' => null,
                 'created_at' => date('c', $now),
@@ -246,3 +247,4 @@ class HoldManager
         return JsonFileStore::withLock((string) Config::get('paths.lock'), $callback);
     }
 }
+

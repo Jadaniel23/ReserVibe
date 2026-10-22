@@ -75,6 +75,11 @@ class ReservationService
             $errors['guest_phone'] = 'A valid mobile number is required (09xxxxxxxxx or +639xxxxxxxxx).';
         }
 
+        $guestCount = Validator::int($input['guests'] ?? null, 1);
+        if ($guestCount === null) $errors['guests'] = 'Enter a valid number of guests.';
+        $termsAccepted = ($input['agree_terms'] ?? false) === true;
+        if (!$termsAccepted) $errors['agree_terms'] = 'Accept the school-demo booking terms to continue.';
+
         $addonCodes = Validator::list($input['addons'] ?? []);
 
         $unknown = $this->calculator->unknownAddonCodes($addonCodes);
@@ -109,6 +114,8 @@ class ReservationService
                 $guestName,
                 $guestEmail,
                 $guestPhone,
+                $guestCount,
+                $termsAccepted,
                 $addonCodes,
                 $paymentMethodCode,
                 $paymentMethod,
@@ -151,6 +158,13 @@ class ReservationService
                     return ['ok' => false, 'message' => 'The accommodation on this hold no longer exists.'];
                 }
 
+                if ($guestCount > (int) ($accommodation['capacity'] ?? 0)) {
+                    return ['ok' => false, 'message' => 'Guest count exceeds this package capacity.', 'errors' => ['guests' => 'Maximum capacity is ' . (int) $accommodation['capacity'] . '.']];
+                }
+                if (isset($hold['guest_count']) && (int) $hold['guest_count'] !== $guestCount) {
+                    return ['ok' => false, 'message' => 'Guest count changed after the slot was held. Start again to recheck capacity.', 'errors' => ['guests' => 'Guest count must match the held request.']];
+                }
+
                 $checkIn = (string) ($hold['check_in'] ?? '');
                 $checkOut = (string) ($hold['check_out'] ?? '');
                 $nights = $this->calculator->nightsBetween($checkIn, $checkOut) ?? 1;
@@ -191,6 +205,9 @@ class ReservationService
                     'guest_name' => $guestName,
                     'guest_email' => $guestEmail,
                     'guest_phone' => $guestPhone,
+                    'guests' => $guestCount,
+                    'terms_accepted_at' => date('c', $now),
+                    'terms_version' => 'school-demo-v1',
                     'check_in' => $checkIn,
                     'check_out' => $checkOut,
                     'nights' => $nights,
@@ -274,3 +291,4 @@ class ReservationService
         return null;
     }
 }
+

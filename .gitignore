@@ -1,6 +1,11 @@
 /vendor/
 .env
 .idea/
-.vscode/
+.vscode/*
+!.vscode/tasks.json
 *.log
-composer.lock
+data/payments.json
+data/payment_proofs.json
+data/google_calendar_token.json
+data/login_throttle.json
+public/uploads/payment-proofs/

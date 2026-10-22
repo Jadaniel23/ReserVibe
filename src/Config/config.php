@@ -97,21 +97,21 @@ return [
             'label' => 'GCash',
             'group' => 'E-Wallet',
             'requires_proof' => true,
-            'instructions' => 'Scan the GCash QR, send the deposit, then keep your receipt for verification.',
+            'instructions' => 'School demo only. No live GCash QR or payment processing is configured. Do not send money.',
         ],
         [
             'code' => 'maya',
             'label' => 'Maya',
             'group' => 'E-Wallet',
             'requires_proof' => true,
-            'instructions' => 'Scan the Maya QR, send the deposit, then keep your receipt for verification.',
+            'instructions' => 'School demo only. No live Maya QR or payment processing is configured. Do not send money.',
         ],
         [
             'code' => 'bank_transfer',
             'label' => 'Bank Transfer',
             'group' => 'Bank',
             'requires_proof' => true,
-            'instructions' => 'Transfer the deposit to the resort account, then keep the deposit slip.',
+            'instructions' => 'School demo only. No bank account or payment processing is configured. Do not send money.',
         ],
         [
             'code' => 'paypal',
@@ -119,7 +119,7 @@ return [
             'group' => 'Online',
             'requires_proof' => false,
             'redirect' => true,
-            'instructions' => 'In production this hands off to PayPal to authorise the deposit, then returns here automatically.',
+            'instructions' => 'School demo only. PayPal is not connected and no payment will be processed.',
         ],
         [
             'code' => 'card',
@@ -127,7 +127,7 @@ return [
             'group' => 'Card',
             'requires_proof' => false,
             'redirect' => true,
-            'instructions' => 'In production this hands off to the secure card page. Visa and Mastercard accepted.',
+            'instructions' => 'School demo only. Card processing is not connected and no payment will be processed.',
         ],
         [
             'code' => 'cash',
@@ -135,7 +135,7 @@ return [
             'group' => 'On-site',
             'requires_proof' => false,
             'settles_on_arrival' => true,
-            'instructions' => 'Nothing is collected online. Settle the deposit and balance at the front desk on arrival.',
+            'instructions' => 'School demo only. This records a cash-at-resort choice; it does not confirm a real reservation or collect money.',
         ],
     ],
 

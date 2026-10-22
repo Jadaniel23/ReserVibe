@@ -208,3 +208,44 @@ select, input[type="date"], input[type="number"] {
 .alert-error { background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; }
 .alert-success { background: #f0fdf4; border: 1px solid #bbf7d0; color: #166534; }
 .hidden { display: none !important; }
+
+/* Accessible theme overrides: color the page directly instead of filtering it.
+   A filter on body also inverts CSS background photos and form controls. */
+body.dark-mode {
+  filter: none;
+  background: #14211b;
+  color: #e8eee7;
+}
+body.dark-mode img { filter: none; }
+body.dark-mode .site-header,
+body.dark-mode .primary-nav.is-open {
+  background: rgba(20, 33, 27, .96);
+  border-color: #34483b;
+}
+body.dark-mode .brand,
+body.dark-mode .primary-nav a,
+body.dark-mode .room-card h2 { color: #e8eee7; }
+body.dark-mode .brand small,
+body.dark-mode .faq-list p,
+body.dark-mode .page-heading p,
+body.dark-mode .room-card p { color: #bdcabe; }
+body.dark-mode .eyebrow { color: #a8cfb4; }
+body.dark-mode .feature-grid article { border-color: #607b68; }
+body.dark-mode .feature-grid h3,
+body.dark-mode .intro-section h2,
+body.dark-mode .faq-section h2 { color: #e8eee7; }
+body.dark-mode .room-card { background: #1c2c23; }
+body.dark-mode .search-field input {
+  box-sizing: border-box;
+  background: #1c2c23;
+  border-color: #607468;
+  color: #f3f6f2;
+}
+body.dark-mode .search-field input::placeholder { color: #bdcabe; opacity: 1; }
+.search-field input {
+  box-sizing: border-box;
+  background: #fff;
+  color: #173128;
+  border-radius: 4px;
+}
+.search-field input::placeholder { color: #64748b; opacity: 1; }

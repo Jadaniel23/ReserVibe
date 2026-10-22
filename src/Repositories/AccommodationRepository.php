@@ -54,6 +54,18 @@ class AccommodationRepository
         return null;
     }
 
+    /** Find a package only when it is available for new bookings. */
+    public function findActive(int $id): ?array
+    {
+        foreach ($this->active() as $room) {
+            if ((int) ($room['id'] ?? 0) === $id) {
+                return $room;
+            }
+        }
+
+        return null;
+    }
+
     /** Valid values for the ?type= filter. */
     public function types(): array
     {

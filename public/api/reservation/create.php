@@ -38,6 +38,7 @@ if (!$result['ok']) {
 }
 
 $reservation = $result['reservation'];
+$_SESSION['last_confirmation'] = $reservation;
 
 Response::success([
     'reservation' => $reservation,
@@ -46,3 +47,4 @@ Response::success([
     'message' => 'Reservation ' . $reservation['reference'] . ' created. Upload your '
         . number_format((float) $reservation['deposit_due'], 2) . ' deposit to move it to verification.',
 ], 201);
+

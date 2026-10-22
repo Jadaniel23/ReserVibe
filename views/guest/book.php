@@ -56,7 +56,7 @@ $format = static fn (float $amount): string => number_format($amount, 2);
 
     <!-- Tier selection, driven by data/accommodations.json -->
     <div class="form-group">
-      <label for="accommodation">Accommodation</label>
+      <label for="guest-count">Number of Guests</label><input type="number" id="guest-count" min="1" value="1" required style="width: 100%; padding: 0.75rem; border: 1px solid var(--color-border); border-radius: 4px; margin-bottom: 1rem;" /></div><div class="form-group"><label for="accommodation">Accommodation</label>
       <select id="accommodation">
         <?php foreach ($rooms as $option): ?>
           <option
@@ -109,9 +109,9 @@ $format = static fn (float $amount): string => number_format($amount, 2);
       <label>Payment Method</label>
       <div class="method-grid" id="method-grid">
         <?php foreach ($paymentMethods as $index => $method):
-            $panel = $method['group'] === 'E-Wallet'
-                ? 'SCAN ' . strtoupper((string) $method['label']) . ' QR'
-                : ($method['group'] === 'Bank' ? 'RESORT BANK ACCOUNT' : '');
+                        $panel = in_array((string) ($method['group'] ?? ''), ['E-Wallet', 'Bank'], true)
+                ? '<p><strong>School demo only:</strong> No live QR code or bank details are configured. Do not send money. This choice is only recorded for the simulated staff workflow.</p>'
+                : '';
         ?>
           <label class="method-card<?php echo $index === 0 ? ' is-selected' : ''; ?>">
             <input
@@ -155,7 +155,7 @@ $format = static fn (float $amount): string => number_format($amount, 2);
     </div>
 
     <div class="button-row">
-      <button class="btn" id="book-btn">Proceed to Payment</button>
+      <div style="margin-bottom: 1rem;"><label style="display: flex; gap: 0.5rem; align-items: center;"><input type="checkbox" id="agree-terms" required> <span>I understand the <a href="?action=terms" target="_blank" style="text-decoration: underline;">school-demo terms and privacy note</a></span></label></div><button class="btn" id="book-btn">Proceed to Payment</button>
       <a class="btn btn-ghost" id="menu-btn" href="?action=rooms">Return to Menu</a>
     </div>
   </div>
@@ -185,7 +185,7 @@ $format = static fn (float $amount): string => number_format($amount, 2);
       <div class="alert hidden" id="modal-alert" role="status"></div>
 
       <div class="button-row">
-        <button class="btn" id="confirm-btn">I've Paid — Confirm Booking</button>
+        <button class="btn" id="confirm-btn">Confirm Demo Reservation</button>
       </div>
       <div class="button-row">
         <button class="btn btn-ghost" id="cancel-btn" type="button">Cancel Booking</button>
@@ -197,3 +197,4 @@ $format = static fn (float $amount): string => number_format($amount, 2);
   <script src="<?php echo \App\Helpers\Assets::url('/assets/js/booking.js'); ?>"></script>
 </body>
 </html>
+

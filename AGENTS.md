@@ -1,7 +1,7 @@
 # AGENTS.md — ReserVibe project memory
 
 Durable context for any AI agent or developer working in this repo.
-**Status:** reviewed 2026-09-19 — Modules 1–4 are now implemented and tested against a live server.
+**Status:** updated 2026-10-04 — modules 1–10 have school-demo workflows; first three fix-list priorities now cover hashed staff passwords, login lockout, booking limits, stay times and cancellation rules. Storage remains JSON. No online payment gateway is connected; Google Calendar requires OAuth credentials in the developer's local `.env` and an admin-triggered sync.
 Update this file when scope or architecture changes.
 
 ---
@@ -17,11 +17,12 @@ Update this file when scope or architecture changes.
 
 ## 2. Tech stack
 
-- **Backend:** PHP 8.2 (OOP) + MySQL, PDO.
+- **Backend:** PHP 8.2 (OOP) + JSON-file storage (no database connection in this prototype).
 - **Frontend:** HTML5, CSS3, vanilla JavaScript (Fetch API).
-- **Calendar:** FullCalendar (JS) + Google Calendar API integration.
-- **Payments:** manual-review flow — guest uploads GCash / Maya / bank QR proof.
-- **Mail:** PHPMailer (SMTP) for status emails and receipts.
+- **Calendar:** availability feed plus optional Google Calendar OAuth and manual reservation sync; credentials are not included.
+- **Payments:** receipt images can be uploaded privately and reviewed by staff; ledger entries are offline demo records, with no payment gateway or refunds.
+- **Staff access:** local session-backed accounts use `password_hash()` values stored only in ignored `.env`; five failures in ten minutes trigger a five-minute account-and-IP lockout.
+- **Mail:** no email integration is implemented.
 
 **Coding guidelines the project commits to:**
 
@@ -30,23 +31,23 @@ Update this file when scope or architecture changes.
 | Parameterized queries only (PDO), never raw SQL concatenation | N/A yet — no SQL exists. Repositories are the only swap point. |
 | Validate/sanitize all input | ✅ `App\Helpers\Validator`, applied in every POST endpoint |
 | CSRF on every mutating endpoint | ✅ `App\Services\CsrfProtection`, enforced on all POSTs |
-| Uploads: real MIME sniffing (`finfo`), size limits, randomized names | ⬜ not built yet (Module 5) |
+| Uploads: real MIME sniffing (`finfo`), size limits, randomized names | ✅ payment proofs, stored outside `public/` |
 | Layering: Repositories / Services / API endpoint files / frontend | ✅ enforced — endpoints contain no business logic, services contain no storage access |
 
 ## 3. Scope — 10 core modules
 
 | # | Module | State |
 |---|---|---|
-| 1 | Accommodation & Package Catalog | ✅ API + data seeded |
-| 2 | Availability Calendar | ✅ check + FullCalendar feed |
-| 3 | Online Reservation & Cost Calculation | ✅ server-side quote, 50% deposit |
+| 1 | Accommodation & Package Catalog | Implemented: searchable guest catalogue plus admin create/edit/hide; JSON rates feed server quotes |
+| 2 | Availability | Implemented: availability check and calendar event feed; no calendar UI |
+| 3 | Reservation & Cost Calculation | Implemented: browser booking flow, server-side quote, reservation creation |
 | 4 | Conflict Prevention & Temporary Holds | ✅ atomic, lazy expiry, race-tested |
-| 5 | QR Code Payment & Receipt Upload | 🟡 method selection + cancellation done; proof upload and staff verification pending |
-| 6 | Payment & Balance Tracking | ⬜ ledger fields already on the reservation record |
-| 7 | Cancellation & Rescheduling Engine | ⬜ |
-| 8 | Google Calendar API Integration | ⬜ |
-| 9 | Walk-In Management & Guest Status | ⬜ `guest_status` field already on the record |
-| 10 | Admin Dashboard & Operational Reports | ⬜ |
+| 5 | Payment Proof & Verification | Implemented: private image upload, staff review, approve/reject |
+| 6 | Payment & Balance Settlement | Implemented: offline ledger, partial payments, amount-paid/balance calculations |
+| 7 | Cancellation & Rescheduling | Implemented: guest self-service by reference/email; availability/price recalculated; 7-day reschedule cutoff and 3-day non-refundable deposit rule recorded |
+| 8 | Google Calendar Integration | Optional: OAuth and manual sync; needs the owner's Google API credentials and consent |
+| 9 | Walk-ins & Guest Status | Implemented: staff walk-in entry and arrived/left workflow |
+| 10 | Admin Dashboard & Reports | Implemented: role-gated desk, KPIs, CSV export |
 
 **Longer-horizon vision** (from the project's written spec — *not* current build scope):
 role tiers (Admin / Front Desk / Cashier / Housekeeping), housekeeping task board, dynamic
@@ -60,7 +61,7 @@ post-stay feedback & review system with moderation and satisfaction analytics.
 | Routing | **Hybrid, resolved:** guest pages render through the front controller (`?action=`); every JSON endpoint is its own file under `public/api/` | One-file-per-endpoint is trivially explainable in a defense and needs no router library |
 | Hold expiration | **Lazy check on read** — verified on `hold/status`, on `hold/create` and on booking confirmation; no cron job | No server-level cron on shared/school hosting |
 | Views | **Plain PHP includes** — no templating engine | One less dependency |
-| Database | **Deferred** — a JSON store stands in behind `Repositories/` | User asked to build the API first; `Repositories/` is the only layer that changes when MySQL lands |
+| Database | **Deferred by choice for this school demo** — records stay in JSON behind `Repositories/` | No MySQL install is required to demonstrate modules 1–10; this remains a single-host prototype |
 | Timezone | `Asia/Manila`, set in `src/Config/config.php` (overridable via `APP_TIMEZONE` in `.env`) | Hold countdowns must read in resort-local time, not hosting default |
 | Money | Server-authoritative: the client sends **add-on codes and dates, never prices** | A tampered request cannot change the total |
 | Payment methods | Declared once in `config.php` under `payment_methods`; the booking view renders them and the API validates `payment_method` against the same list | The page and the API can never disagree about what is offered, and `payment_method` is required (422 if unknown) |
@@ -88,17 +89,25 @@ right for a single-server school deployment and would be replaced by
 **Evidence:** two simultaneous `hold/create` requests for the same fresh slot return
 `201` and `409`, and exactly one hold is written. Re-runnable — see §8.
 
-### Lifecycles
+### Current implemented lifecycles
 
-- Reservation: `pending_payment` → `pending_verification` → `confirmed` | `payment_rejected`
-  → (optionally) `cancelled`
-- Guest status: `reserved` → `arrived` → `left`
-- Hold: `active` → `expired` | `released` | `confirmed`
+- Reservation: `pending_payment` → `pending_verification` → `confirmed`, or `cancelled`; proof rejection returns an active stay to `pending_payment`.
+- Hold: `active` → `expired` | `released` | `confirmed`.
+- Guest status: `reserved` → `arrived` → `left`; staff creates walk-ins directly.
+- Payments are append-only ledger records; the prototype does not charge, refund or reverse money.
 
-`ReservationRepository::BLOCKING_STATUSES` = `pending_payment`, `pending_verification`,
-`confirmed`. A slot stays occupied until payment is rejected or the booking is cancelled.
+`ReservationRepository::BLOCKING_STATUSES` includes `pending_payment`, `pending_verification`,
+and `confirmed`; cancellation removes a reservation from availability conflicts.
 
-## 5. Verified state of THIS repo (2026-09-19)
+## Fix-list status
+
+Completed from `ReserVibe-Fix-List.docx`: private password hashes plus failed-login lockout; maximum 30-night stays and bookings up to 365 days ahead; fixed 14:00/11:00 arrival times; visible reschedule/cancellation terms with server-side enforcement. README already lists the required PHP extensions `mbstring` and `fileinfo`.
+
+Still suggested for later: a printable confirmation view, guest-facing availability calendar, terms/privacy/house rules with booking acknowledgement, resort information, append-only staff action log, reservation search/filters, printable arrivals, and local room photos. A real or sample payment QR must remain clearly identified as a school demo and use owner-approved details.
+## 5. Historical verification snapshot (2026-09-19)
+
+The checks below were run on the repo state at that date. Files have changed since,
+so these results are historical evidence only and do not verify the current working tree.
 
 Commit `f4c23b7 "Initial commit"` plus uncommitted work. **All 36 PHP files pass `php -l`.**
 
@@ -217,85 +226,42 @@ Two conflicts from the capsule, now settled:
 - **Hold duration** — `hold_minutes` in config = 90, and the booking view now *renders* that
   value instead of hardcoding "15 minutes".
 
-## 8. How to run and re-test
+## 8. How to run and verify
 
-```bash
-cd public
-php -S 127.0.0.1:8123
-```
+Run from the project root with `php -S 127.0.0.1:8000 -t public`, then follow
+the browser and staff-desk walkthrough in `README.md`. Staff access comes from a
+session created by the login form; role headers do not grant access. Mutating API
+requests require the session's CSRF token. The README reset task is destructive and
+clears holds, reservations, local payment records, uploaded proofs, and the Calendar
+token; use it only when you intentionally want to discard the demo data.
 
-```bash
-# 1. token (keep the cookie jar — the token lives in the session)
-curl -s -c cj -b cj http://127.0.0.1:8123/api/csrf-token.php
-TOKEN=<paste csrf_token>
+The verification table in §5 is a dated snapshot of Modules 1–4 from 2026-09-19,
+not evidence for the current working tree. Re-run current checks on a disposable
+copy before relying on them; do not use the reset task against the project data.
 
-# 2. catalogue
-curl -s http://127.0.0.1:8123/api/catalog/list.php
+## 9. Optional work beyond the 10 school-demo modules
 
-# 3. quote: 2 nights, cottage + videoke
-curl -s -X POST -b cj -H "Content-Type: application/json" -H "X-CSRF-Token: $TOKEN" \
-  -d '{"accommodation_id":1,"check_in":"2026-10-05","check_out":"2026-10-07","addons":["videoke"]}' \
-  http://127.0.0.1:8123/api/reservation/calculate.php
-
-# 4. claim a slot (201)
-curl -s -X POST -b cj -H "Content-Type: application/json" -H "X-CSRF-Token: $TOKEN" \
-  -d '{"accommodation_id":1,"check_in":"2026-10-05","check_out":"2026-10-07"}' \
-  http://127.0.0.1:8123/api/hold/create.php
-
-# 5. the same slot again → 409
-# 6. prove the race: fire step 4 twice in parallel; exactly one returns 201
-
-# 7. confirm the booking from the hold id
-curl -s -X POST -b cj -H "Content-Type: application/json" -H "X-CSRF-Token: $TOKEN" \
-  -d '{"hold_id":1,"guest_name":"Juan Dela Cruz","guest_email":"juan@example.com","guest_phone":"09171234567"}' \
-  http://127.0.0.1:8123/api/reservation/create.php
-
-# 8. staff view
-curl -s -H "X-User-Role: staff" http://127.0.0.1:8123/api/reservation/list.php
-```
-
-Reset the demo data by writing `[]` into `data/holds.json` and `data/reservations.json`.
-
-## 9. Roadmap — next steps
-
-1. **Module 5 — payment proof upload.** Methods are chosen and recorded; what is
-   missing is the receipt itself. Needs `FileUploadValidator` with real `finfo` MIME
-   sniffing, size cap and randomized filenames (settings already in config under `uploads`),
-   plus `payment/upload.php`, `payment/verify.php` (staff) and the
-   `pending_payment → pending_verification → confirmed` transitions. Only methods
-   flagged `requires_proof` should demand an image.
-2. **Module 6 — ledger.** `payment/ledger.php` and balance math off the reservation record
-   (`amount_paid`, `deposit_due`, `balance_due` already exist).
-3. **Module 10 + staff surfaces.** `views/staff/` and `views/admin/` are empty;
-   `dashboard.js` is 0 bytes; KPI endpoint still to write.
-4. ~~Wire the booking page to the API.~~ **Done** — `booking.js` now places the hold,
-   shows the countdown, confirms the booking, releases on cancel, and surfaces API
-   errors. It still computes the *display* total client-side, but the server prices the
-   booking independently and its numbers are what get stored.
-5. **Modules 7 and 9** — cancellation/reschedule engine, walk-in and guest-status toggles.
-6. **Module 8** — Google Calendar + PHPMailer. Add
-   `composer require phpmailer/phpmailer` and `composer require google/apiclient`
-   (`composer.json` is currently `{}`), then implement the service classes the endpoints call.
-7. **MySQL + PDO.** Design the schema and rewrite only `src/Repositories/` — use
-   transactions/`SELECT ... FOR UPDATE` to keep the §4 guarantee.
-8. **Real authentication.** `X-User-Role` is a placeholder; replace with accounts + sessions
-   and keep `Response::requireRole()` as the single gate.
+The core modules are implemented against JSON storage. If the course requires a
+database, MySQL/PDO can replace the repositories; it is not needed to run or show
+this version. A multi-host deployment would need a transactional database because
+`flock()` protects only processes on one host. Production deployment would also need
+strong account management, secret rotation, backups, a refund policy, and live payment
+provider integration. SMTP/email notifications are not part of the 10-module scope.
 
 ## 10. Housekeeping / risks
 
 - **⚠ Exposed credential:** the git remote URL in `.git/config` embeds a GitHub personal
   access token. Rotate/revoke it and switch to a credential helper or SSH. `.env` is
   correctly gitignored — keep it that way.
-- `X-User-Role` is trivially spoofable. It exists only to keep staff endpoints visibly
-  separated so real auth is a one-place change. Do not treat it as security.
+- Staff usernames and password hashes must be configured in private `.env`; no plaintext defaults are committed. The JSON login throttle suits this localhost school demo, not production account security.
 - **PayPal and card are UI-level only.** No gateway is integrated: choosing them records
   the method on the booking and nothing is charged. Say that plainly rather than implying
   a working payment integration.
 - "Cancel Booking" releases the hold, but navigating away with **Return to Menu** does not —
   the hold simply expires on its own. If that matters later, release it on `beforeunload`
   or expire it server-side faster.
-- The role header is checked **only** in `reservation/list.php` so far — every new staff
-  endpoint must add `Response::requireRole([...])` explicitly.
+- Staff API routes use `Response::requireRole([...])`, which checks the signed-in session.
+  The old `X-User-Role` header is ignored.
 - The JSON store is fine for one host. It is not a substitute for a database under real load.
 - **⚠ Concurrent editor.** Parts of this repo have been written by something other than the
   assistant session that wrote most of this file. The `.booking-shell` rule and the
@@ -310,7 +276,7 @@ Reset the demo data by writing `[]` into `data/holds.json` and `data/reservation
   confusing "my fix did nothing" round trip. `App\Helpers\Assets::url()` appends
   `?v=<mtime>` to defeat it; use it for any new asset reference in a view.
 - `composer.lock` is tracked but `.gitignore` lists it — still unresolved; pick one policy.
-- `views/{staff,admin,layouts}` are empty, so page chrome is duplicated per view. Extract a
-  layout when the staff screens land.
-- `data/` is runtime state. `accommodations.json` is the seeded catalogue and *should* be
-  committed; `.booking.lock` must not be (it is gitignored).
+- `data/` contains local records and private tokens/proof images. Do not commit
+  `payments.json`, `payment_proofs.json`, upload images, or the Google token.
+- `accommodations.json` is the seeded catalogue and *should* be committed;
+  `.booking.lock` must not be (it is gitignored).

@@ -38,6 +38,18 @@ switch ($action) {
             $controller->showForm();
         }
         break;
+    case 'manage':
+        Response::render('guest/manage');
+        break;
+    case 'terms':
+        Response::render('guest/terms');
+        break;
+    case 'calendar':
+        Response::render('guest/calendar');
+        break;
+    case 'confirmation':
+        Response::render('guest/confirmation');
+        break;
     default:
         // Render the real 404 page rather than bare text, so a mistyped URL
         // still gives the visitor the site layout and a way back. The view

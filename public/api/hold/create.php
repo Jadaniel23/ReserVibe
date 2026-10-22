@@ -32,6 +32,7 @@ $checkIn = Validator::date($input['check_in'] ?? null);
 $checkOut = Validator::date($input['check_out'] ?? null);
 $guestName = Validator::text($input['guest_name'] ?? '', 0, 120);
 $guestContact = Validator::text($input['guest_contact'] ?? '', 0, 120);
+$guestCount = Validator::int($input['guests'] ?? null, 1);
 
 $errors = [];
 
@@ -62,15 +63,21 @@ if ($guestName === null) {
 if ($guestContact === null) {
     $errors['guest_contact'] = 'guest_contact must be 120 characters or fewer.';
 }
+if ($guestCount === null) {
+    $errors['guests'] = 'A valid guest count is required.';
+}
 
 if ($errors !== []) {
     Response::error('Validation failed.', 422, $errors);
 }
 
-$accommodation = (new AccommodationRepository())->find($accommodationId);
+$accommodation = (new AccommodationRepository())->findActive($accommodationId);
 
 if ($accommodation === null) {
     Response::error('Accommodation not found.', 404);
+}
+if ($guestCount > (int) ($accommodation['capacity'] ?? 0)) {
+    Response::error('Guest count exceeds this package capacity.', 422, ['guests' => 'Maximum capacity is ' . (int) $accommodation['capacity'] . '.']);
 }
 
 $manager = new HoldManager();
@@ -78,6 +85,7 @@ $manager = new HoldManager();
 $result = $manager->place($accommodationId, $checkIn, $checkOut, [
     'guest_name' => $guestName,
     'guest_contact' => $guestContact,
+    'guest_count' => $guestCount,
 ]);
 
 if (!$result['granted']) {
@@ -97,3 +105,4 @@ Response::success([
     'message' => 'Slot held for ' . $manager->holdMinutes()
         . ' minutes. Upload your payment proof before it expires.',
 ], 201);
+
