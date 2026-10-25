@@ -55,16 +55,10 @@ class Response
         }
     }
 
-    /**
-     * Placeholder role gate.
-     *
-     * The X-User-Role header is a stand-in until the real accounts/session
-     * system exists; it keeps staff endpoints visibly separated so swapping in
-     * proper authentication is a one-place change.
-     */
+    /** Enforce authorization using the role established by session login. */
     public static function requireRole(array $roles): string
     {
-        $role = $_SERVER['HTTP_X_USER_ROLE'] ?? 'guest';
+        $role = \App\Services\AuthService::role();
 
         if (!in_array($role, $roles, true)) {
             self::error('Forbidden. This endpoint requires role: ' . implode(' or ', $roles) . '.', 403);

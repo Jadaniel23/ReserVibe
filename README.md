@@ -299,10 +299,11 @@ without a Google account.
 3. Copy `.env.example` to `.env` if needed, then set `GOOGLE_CLIENT_ID` and
    `GOOGLE_CLIENT_SECRET`. Keep the secret private. Set `GOOGLE_CALENDAR_ID=primary`
    or the ID of a calendar shared with the Google account.
-4. Sign in as `admin`, choose **Connect Google account**, grant event access, then
-   use **Sync reservations**. Syncing is manual; the school demo does not run a
-   background scheduler. Reservation events include a reference, package and status,
-   but omit guest phone and email.
+4. Sign in as `admin`, choose **Connect Google account**, and grant event access.
+   Confirmed reservations then sync automatically after payment approval, walk-in
+   creation, cancellation, or date changes. **Sync reservations** remains available
+   to retry a failed update or reconcile the calendar. Events include the reservation
+   reference, package, status, and stay dates/times; guest phone and email are excluded.
 
 For a different local port or deployment URL, change `GOOGLE_REDIRECT_URI` and add
 that exact URL to the OAuth client's authorized redirect URIs. Google may require
@@ -348,6 +349,21 @@ In VS Code, run the **Reset all local demo data** task instead. This reset is pe
 
 ## What works and what doesn't
 
+### Rubric feature updates — October 25, 2026
+
+- The guest calendar filters by package and checks a selected date against reservations and active holds. Staff can click a calendar event to see booking details and edit dates or cancel.
+- Staff can upload or replace owner-approved QR images for proof-based methods. Guests see the configured code during booking and can send a receipt image for staff review. Supply the resort's real QR images through the staff desk; none are bundled with the project.
+- Guest cancellation and rescheduling are now requests. Staff review the reason and either approve or decline; availability and booking rules are rechecked when staff approves. Guests can check request status with their reservation reference and email.
+- The staff dashboard now reports today's and upcoming arrivals/departures, outstanding balances, payments, and pending proofs. Admins can export reservation CSV reports.
+- Google OAuth and token storage are implemented. After owner credentials and consent are provided, confirmed reservations sync automatically after payment review, offline payment confirmation, walk-in creation, cancellation, and rescheduling. Admins can manually sync to retry or reconcile. Events include the reservation reference, package, status, and stay dates/times, but exclude guest contact details. Calendar failures do not undo a saved booking/payment and are shown to staff for retry.
+- Staff sign-in and dashboard routes are available at `?action=staff-login` and `?action=dashboard`.
+
+To configure payment QR images, sign in with a staff or admin account, open the
+**Payment QR codes** panel, choose GCash, Maya, or Bank Transfer, select the
+owner-approved image, and upload it. The QR then appears during booking and on
+the confirmation page. If no image is uploaded, guests are told to contact the
+front desk before sending money.
+
 ### Fix-list progress - October 4, 2026
 
 - Staff passwords now come from password hashes in private `.env`; the repository no longer contains plaintext defaults. Login attempts are limited to five failures per account and IP within ten minutes, followed by a five-minute lockout.
@@ -355,7 +371,7 @@ In VS Code, run the **Reset all local demo data** task instead. This reset is pe
 - Rescheduling requires at least seven days before arrival. Cancellation records whether the three-day deposit rule applies. The demo does not issue refunds; other refund requests are left for staff review.
 - PHP `mbstring` and `fileinfo` extensions were already listed in the run guide.
 
-Suggested next items from `ReserVibe-Fix-List.docx`: printable booking confirmation, guest-facing availability calendar, terms/privacy/house rules with booking acknowledgement, resort information, staff action log, reservation search and filters, and a printable arrivals list. Keep payment options clearly marked as demo-only; a GCash QR needs an owner-approved test account or an explicitly labeled sample image. Local room photography is a separate asset task.
+Suggested next items from `ReserVibe-Fix-List.docx`: terms/privacy/house rules with booking acknowledgement, resort information, staff action log, reservation filters, printable arrivals, and local room photography. Payment QR images must be supplied and approved by the resort owner.
 ### Recent updates - October 3, 2026
 
 - Fixed the booking estimate to calculate the room subtotal from the nightly rate and the selected number of nights.
@@ -368,13 +384,13 @@ Suggested next items from `ReserVibe-Fix-List.docx`: printable booking confirmat
 - Added shareable VS Code tasks and clarified Windows versus Git Bash run/reset instructions.
 - Clarified that every payment option is demo-only and made booking actions recover from network failures.
 - Added receipt uploads with staff review, a payment ledger, reservation cancellation/rescheduling, walk-ins, guest arrival status, and a staff desk with summary and CSV report.
-- Added optional Google Calendar OAuth and manual synchronization; credentials remain local in `.env` and are not included.
+- Added optional Google Calendar OAuth and automatic synchronization of confirmed reservation changes; credentials remain local in `.env` and are not included.
 - Added an admin package-maintenance panel; saved rates feed both the guest catalogue and server-side quotes, and hidden packages are blocked from new bookings.
 
-**Modules 1–10:** package catalogue; availability; reservation and cost calculation;
-temporary holds and conflict prevention; payment-proof submission and review; manual
-payment ledger and balance tracking; reservation cancellation/rescheduling; optional
-Google Calendar sync; walk-ins and guest arrival/departure status; staff dashboard and
+**Modules 1–10:** package catalogue; package-specific availability calendar; reservation and cost calculation;
+temporary holds and conflict prevention; staff-managed payment QR and proof review;
+payment ledger and balance tracking; staff-reviewed cancellation/rescheduling requests;
+automatic Google Calendar sync after connection (with manual retry); walk-ins and guest arrival/departure status; staff dashboard and
 CSV report. The system retains JSON storage, CSRF on mutations, validation, and
 session-backed demo staff roles.
 
@@ -382,24 +398,25 @@ session-backed demo staff roles.
 in the dates and guest details, pick a payment method, and press **Reserve this
 slot**. The page places a temporary hold through the API, shows a live 90-minute
 countdown, and **Confirm Reservation** records the reservation. Guests can then open
-**Manage reservation** to upload a sample receipt, request a date change, or cancel.
-Staff review receipt images and record offline payments in the ledger. **Cancel
+**Manage reservation** to upload a receipt, request date changes or cancellation, and
+check the request status. Staff review receipts and change requests and record offline payments. **Cancel
 Booking** releases the slot immediately, and **Return to Menu** goes back to the
 package list. If you leave the page without cancelling, the hold simply expires.
 
 **Payment methods** come from `src/Config/config.php` (the `payment_methods`
 list), so the page and the API can never disagree about what is offered:
 GCash, Maya, Bank Transfer, PayPal, Credit/Debit Card, and Cash at the Resort.
-All six are demo choices only. The page displays no live QR codes or bank details,
-connects to no payment gateway, and collects no money. Guests may upload a sample
-receipt image for manual review; staff can record payments that were received
-outside the app. Neither action transfers or verifies real funds.
+All choices are recorded by this school demo; no payment gateway is connected. Staff
+can upload resort-approved QR images for GCash, Maya, or bank transfer. Those transfers
+happen outside the app; guests upload a receipt and staff review it before recording
+the payment. Do not upload a QR unless the resort owner approved it. Without an
+uploaded QR, the booking page tells guests to contact the front desk before sending money.
 
 **Demo boundaries:**
 
 - **No payment gateway or refunds.** Receipts are reviewed manually; staff-entered
   ledger entries are demo records.
-- **Google Calendar needs your OAuth credentials** and a manual sync from the admin desk.
+- **Google Calendar needs owner OAuth credentials and consent.** Confirmed bookings and staff changes sync automatically after connection; admins can run Sync reservations to retry a failed update.
 - **No email/SMTP service is connected.** Booking confirmations appear in the site;
   email notifications are not sent.
 - **No MySQL database.** Records live in local JSON files; the modules do not require

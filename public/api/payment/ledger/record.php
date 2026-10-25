@@ -5,6 +5,7 @@ use App\Helpers\Response;
 use App\Repositories\ReservationRepository;
 use App\Services\CsrfProtection;
 use App\Services\PaymentService;
+use App\Services\GoogleCalendarService;
 require_once __DIR__ . '/../../bootstrap.php';
 Response::requireMethod('POST');
 Response::requireRole(['staff', 'admin']);
@@ -19,6 +20,7 @@ if (!$reservationId || !is_numeric($amount) || !is_string($method) || !is_string
 }
 try {
     $result = (new PaymentService())->recordPayment((int) $reservationId, (float) $amount, $method, (string) $_SESSION['user_id'], trim($note));
+    $result['calendar_sync'] = (new GoogleCalendarService())->syncAfterReservationChange();
     Response::success($result, 201);
 } catch (InvalidArgumentException $error) {
     Response::error($error->getMessage(), 422);

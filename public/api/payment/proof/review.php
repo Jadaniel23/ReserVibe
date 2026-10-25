@@ -4,6 +4,7 @@ declare(strict_types=1);
 use App\Helpers\Response;
 use App\Services\CsrfProtection;
 use App\Services\PaymentService;
+use App\Services\GoogleCalendarService;
 require_once __DIR__ . '/../../bootstrap.php';
 Response::requireMethod('POST');
 Response::requireRole(['staff', 'admin']);
@@ -15,6 +16,7 @@ $note = $input['note'] ?? '';
 if (!$id || !is_string($decision) || !is_string($note) || mb_strlen($note) > 300) Response::error('Provide a proof id, decision, and a note under 300 characters.', 422);
 try {
     $result = (new PaymentService())->review((int) $id, $decision, trim($note), (string) $_SESSION['user_id']);
+    $result['calendar_sync'] = (new GoogleCalendarService())->syncAfterReservationChange();
     Response::success($result);
 } catch (InvalidArgumentException $error) {
     Response::error($error->getMessage(), 409);

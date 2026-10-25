@@ -199,9 +199,23 @@
     if (modalInstructions) modalInstructions.textContent = method.dataset.instructions || '';
 
     if (qrBox) {
-      const panel = method.dataset.panel || '';
-      qrBox.textContent = panel;
-      qrBox.classList.toggle('hidden', !proof || panel === '');
+      qrBox.replaceChildren();
+      qrBox.classList.toggle('hidden', !proof);
+      if (proof) {
+        const image = document.createElement('img');
+        image.alt = (method.dataset.label || 'Payment') + ' resort QR code';
+        image.src = '/api/payment/qr.php?method=' + encodeURIComponent(method.value);
+        image.className = 'payment-qr-image';
+        image.onerror = () => {
+          qrBox.replaceChildren();
+          const note = document.createElement('p');
+          note.textContent = 'No QR code is configured for this payment method. Contact the front desk before sending money.';
+          qrBox.appendChild(note);
+        };
+        const caption = document.createElement('p');
+        caption.textContent = 'Scan the resort QR, then upload your receipt for staff verification.';
+        qrBox.append(image, caption);
+      }
     }
 
     if (arrivalNote) {

@@ -12,7 +12,6 @@
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=Playfair+Display:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="<?php echo \App\Helpers\Assets::url('/assets/css/style.css'); ?>">
     <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.js"></script>
-    <script src="<?php echo \App\Helpers\Assets::url('/assets/js/calendar.js'); ?>"></script>
 </head>
 <body>
     <div class="site-shell">
@@ -20,10 +19,14 @@
         <main class="container" id="main-content" style="max-width: 900px; padding-top: 4rem; padding-bottom: 4rem;">
             <p class="eyebrow">Verde Royale Resort</p>
             <h1>Availability Calendar</h1>
-            <p style="margin-bottom: 2rem;">This calendar shows reservations recorded in the school-project demo. Confirm actual resort availability directly before making plans.</p>
+            <p style="margin-bottom: 1rem;">Choose a package, then select a date to check availability in this demo. Confirm actual resort availability directly before making plans.</p>
+            <label class="form-label" for="calendar-accommodation">Accommodation</label>
+            <select class="form-input" id="calendar-accommodation" style="max-width: 24rem; margin-bottom: 1rem;"><option value="">Loading packages...</option></select>
+            <p id="calendar-result" class="staff-hint" aria-live="polite">Red events are reserved dates; amber events are temporary holds.</p>
             <div id="reservation-calendar"></div>
         </main>
         <?php require __DIR__ . '/../partials/site-footer.php'; ?>
     </div>
+    <script src="<?php echo \App\Helpers\Assets::url('/assets/js/calendar.js'); ?>"></script>
 </body>
 </html>

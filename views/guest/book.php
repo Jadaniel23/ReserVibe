@@ -109,9 +109,6 @@ $format = static fn (float $amount): string => number_format($amount, 2);
       <label>Payment Method</label>
       <div class="method-grid" id="method-grid">
         <?php foreach ($paymentMethods as $index => $method):
-                        $panel = in_array((string) ($method['group'] ?? ''), ['E-Wallet', 'Bank'], true)
-                ? '<p><strong>School demo only:</strong> No live QR code or bank details are configured. Do not send money. This choice is only recorded for the simulated staff workflow.</p>'
-                : '';
         ?>
           <label class="method-card<?php echo $index === 0 ? ' is-selected' : ''; ?>">
             <input
@@ -123,7 +120,7 @@ $format = static fn (float $amount): string => number_format($amount, 2);
               data-instructions="<?php echo htmlspecialchars((string) $method['instructions']); ?>"
               data-proof="<?php echo !empty($method['requires_proof']) ? '1' : '0'; ?>"
               data-arrival="<?php echo !empty($method['settles_on_arrival']) ? '1' : '0'; ?>"
-              data-panel="<?php echo htmlspecialchars($panel); ?>"
+              data-panel=""
               <?php echo $index === 0 ? 'checked' : ''; ?>
             />
             <span class="method-name"><?php echo htmlspecialchars((string) $method['label']); ?></span>

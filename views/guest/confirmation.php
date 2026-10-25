@@ -10,6 +10,10 @@ if (!is_string($reference) || !preg_match('/^RSV-\d{4,}$/i', $reference)
     exit;
 }
 $currency = (string) \App\Helpers\Config::get('currency_symbol', 'PHP');
+$paymentQr = null;
+if (!empty($reservation['payment_requires_proof']) && is_string($reservation['payment_method'] ?? null)) {
+    $paymentQr = (new \App\Services\PaymentQrService())->imageRecord((string) $reservation['payment_method']);
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -39,6 +43,18 @@ $currency = (string) \App\Helpers\Config::get('currency_symbol', 'PHP');
             <p><strong>Demo deposit amount:</strong> <?php echo htmlspecialchars($currency); ?><?php echo number_format((float) $reservation['deposit_due'], 2); ?></p>
             <p><strong>Selected method:</strong> <?php echo htmlspecialchars((string) $reservation['payment_method_label']); ?></p>
         </section>
+        <?php if (!empty($reservation['payment_requires_proof'])): ?>
+        <section class="staff-panel" aria-label="Deposit payment instructions">
+            <h2>Pay the deposit</h2>
+            <p>Amount due: <strong><?php echo htmlspecialchars($currency); ?><?php echo number_format((float) $reservation['deposit_due'], 2); ?></strong> by <?php echo htmlspecialchars((string) ($reservation['payment_method_label'] ?? 'selected payment method')); ?>.</p>
+            <?php if ($paymentQr !== null): ?>
+                <img class="payment-qr-image" src="/api/payment/qr.php?method=<?php echo rawurlencode((string) $reservation['payment_method']); ?>" alt="Owner-approved <?php echo htmlspecialchars((string) ($reservation['payment_method_label'] ?? 'payment')); ?> QR code">
+            <?php else: ?>
+                <p>No QR has been configured for this method. Contact the front desk before sending money.</p>
+            <?php endif; ?>
+            <p>Payment is made outside this demo. After paying, submit your receipt through <a href="?action=manage">Manage reservation</a> for staff review.</p>
+        </section>
+        <?php endif; ?>
         <div class="no-print" style="margin-top: 1.5rem; display: flex; gap: .75rem; flex-wrap: wrap;">
             <button type="button" class="btn btn--primary" onclick="window.print()">Print this page</button>
             <a class="btn btn--ghost" href="?action=manage">Manage reservation</a>

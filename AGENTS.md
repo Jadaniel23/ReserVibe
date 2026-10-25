@@ -1,7 +1,7 @@
 # AGENTS.md — ReserVibe project memory
 
 Durable context for any AI agent or developer working in this repo.
-**Status:** updated 2026-10-04 — modules 1–10 have school-demo workflows; first three fix-list priorities now cover hashed staff passwords, login lockout, booking limits, stay times and cancellation rules. Storage remains JSON. No online payment gateway is connected; Google Calendar requires OAuth credentials in the developer's local `.env` and an admin-triggered sync.
+**Status:** updated 2026-10-25 — the 10 rubric workflows are available in the demo, including guest availability checks, staff calendar actions, staff-reviewed change requests, staff-managed QR images, and arrival/departure reporting. Storage remains JSON. QR images and Google OAuth credentials must be supplied locally by the resort owner; confirmed stays sync automatically after reservation status changes once the owner connects Google Calendar.
 Update this file when scope or architecture changes.
 
 ---
@@ -19,7 +19,7 @@ Update this file when scope or architecture changes.
 
 - **Backend:** PHP 8.2 (OOP) + JSON-file storage (no database connection in this prototype).
 - **Frontend:** HTML5, CSS3, vanilla JavaScript (Fetch API).
-- **Calendar:** availability feed plus optional Google Calendar OAuth and manual reservation sync; credentials are not included.
+- **Calendar:** availability feed plus optional Google Calendar OAuth, automatic reservation sync after state changes, and manual retry; credentials are not included.
 - **Payments:** receipt images can be uploaded privately and reviewed by staff; ledger entries are offline demo records, with no payment gateway or refunds.
 - **Staff access:** local session-backed accounts use `password_hash()` values stored only in ignored `.env`; five failures in ten minutes trigger a five-minute account-and-IP lockout.
 - **Mail:** no email integration is implemented.
@@ -39,15 +39,15 @@ Update this file when scope or architecture changes.
 | # | Module | State |
 |---|---|---|
 | 1 | Accommodation & Package Catalog | Implemented: searchable guest catalogue plus admin create/edit/hide; JSON rates feed server quotes |
-| 2 | Availability | Implemented: availability check and calendar event feed; no calendar UI |
+| 2 | Availability | Implemented: package-filtered calendar, click-to-check availability, and server-side availability API |
 | 3 | Reservation & Cost Calculation | Implemented: browser booking flow, server-side quote, reservation creation |
 | 4 | Conflict Prevention & Temporary Holds | ✅ atomic, lazy expiry, race-tested |
-| 5 | Payment Proof & Verification | Implemented: private image upload, staff review, approve/reject |
+| 5 | QR Payment & Verification | Implemented workflow: staff-managed owner-approved QR images, guest receipt upload, staff review and approve/reject; actual transfers remain external |
 | 6 | Payment & Balance Settlement | Implemented: offline ledger, partial payments, amount-paid/balance calculations |
-| 7 | Cancellation & Rescheduling | Implemented: guest self-service by reference/email; availability/price recalculated; 7-day reschedule cutoff and 3-day non-refundable deposit rule recorded |
-| 8 | Google Calendar Integration | Optional: OAuth and manual sync; needs the owner's Google API credentials and consent |
+| 7 | Cancellation & Rescheduling | Implemented: guest requests by reference/email, staff approval queue, availability/price recheck on approval, 7-day cutoff and 3-day deposit rule |
+| 8 | Google Calendar Integration | Implemented: owner OAuth plus automatic sync after confirmation, payment review, cancellation, rescheduling, and walk-in creation; admin sync remains available for retry; needs owner credentials and consent |
 | 9 | Walk-ins & Guest Status | Implemented: staff walk-in entry and arrived/left workflow |
-| 10 | Admin Dashboard & Reports | Implemented: role-gated desk, KPIs, CSV export |
+| 10 | Admin Dashboard & Reports | Implemented: role-gated desk, clickable staff calendar, arrivals/departures and balance KPIs, CSV export |
 
 **Longer-horizon vision** (from the project's written spec — *not* current build scope):
 role tiers (Admin / Front Desk / Cashier / Housekeeping), housekeeping task board, dynamic
@@ -94,6 +94,7 @@ right for a single-server school deployment and would be replaced by
 - Reservation: `pending_payment` → `pending_verification` → `confirmed`, or `cancelled`; proof rejection returns an active stay to `pending_payment`.
 - Hold: `active` → `expired` | `released` | `confirmed`.
 - Guest status: `reserved` → `arrived` → `left`; staff creates walk-ins directly.
+- Guest change request: `pending` → `approved` | `rejected`; approval applies cancellation/rescheduling under the reservation rules and lock.
 - Payments are append-only ledger records; the prototype does not charge, refund or reverse money.
 
 `ReservationRepository::BLOCKING_STATUSES` includes `pending_payment`, `pending_verification`,
@@ -103,7 +104,7 @@ and `confirmed`; cancellation removes a reservation from availability conflicts.
 
 Completed from `ReserVibe-Fix-List.docx`: private password hashes plus failed-login lockout; maximum 30-night stays and bookings up to 365 days ahead; fixed 14:00/11:00 arrival times; visible reschedule/cancellation terms with server-side enforcement. README already lists the required PHP extensions `mbstring` and `fileinfo`.
 
-Still suggested for later: a printable confirmation view, guest-facing availability calendar, terms/privacy/house rules with booking acknowledgement, resort information, append-only staff action log, reservation search/filters, printable arrivals, and local room photos. A real or sample payment QR must remain clearly identified as a school demo and use owner-approved details.
+Still suggested for later: a printable arrivals list, staff action log, and local room photos. A payment QR must be supplied by the owner and owner-approved before upload. Google Calendar automatic updates require the owner's OAuth credentials and consent; events send reservation reference, package, status, and stay times, but no guest contact details.
 ## 5. Historical verification snapshot (2026-09-19)
 
 The checks below were run on the repo state at that date. Files have changed since,
@@ -174,7 +175,7 @@ payment methods from config. Zero PHP warnings across every run.
 | Confirm booking from hold | 201, `RSV-0001`, pending_payment, deposit 1900 |
 | Hold the same slot again | **409**, now names `RSV-0001` (reservation blocks, not just the hold) |
 | Availability check / calendar feed | 200 / 200 with a red "reserved" event |
-| Staff list without role / with `X-User-Role: staff` | 403 / 200 |
+| Staff list without a signed-in session / with a forged `X-User-Role: staff` header | 403 / 403 |
 | Release hold → re-hold same slot | 200 released → 201 granted |
 | **Two simultaneous holds, same fresh slot** | **201 + 409, exactly 1 hold written** |
 | Stale hold planted → its slot re-booked | status flips to `expired` on read, re-booking returns 201 |

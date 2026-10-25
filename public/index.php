@@ -1,6 +1,12 @@
 <?php
 // public/index.php
 
+// Guest pages share the PHP session used by API requests. In particular,
+// the reservation confirmation is stored by the reservation API and read here.
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
 require_once __DIR__ . '/../src/Config/Database.php';
 require_once __DIR__ . '/../src/Helpers/Response.php';
 
@@ -49,6 +55,50 @@ switch ($action) {
         break;
     case 'confirmation':
         Response::render('guest/confirmation');
+        break;
+    case 'staff-login':
+        if (in_array(App\Services\AuthService::role(), ['staff', 'admin'], true)) {
+            header('Location: ?action=dashboard', true, 302);
+            exit;
+        }
+        Response::render('staff/login', ['csrfToken' => App\Services\CsrfProtection::token()]);
+        break;
+    case 'dashboard':
+        $role = App\Services\AuthService::role();
+        if (!in_array($role, ['staff', 'admin'], true)) {
+            header('Location: ?action=staff-login', true, 302);
+            exit;
+        }
+        Response::render('staff/dashboard', ['role' => $role]);
+        break;
+    case 'google-connect':
+        if (App\Services\AuthService::role() !== 'admin') {
+            header('Location: ?action=staff-login', true, 302);
+            exit;
+        }
+        try {
+            (new App\Services\GoogleCalendarService())->beginAuthorization();
+        } catch (RuntimeException $error) {
+            http_response_code(503);
+            echo htmlspecialchars($error->getMessage(), ENT_QUOTES, 'UTF-8');
+        }
+        break;
+    case 'google-callback':
+        if (App\Services\AuthService::role() !== 'admin') {
+            header('Location: ?action=staff-login', true, 302);
+            exit;
+        }
+        try {
+            (new App\Services\GoogleCalendarService())->finishAuthorization(
+                is_string($_GET['code'] ?? null) ? $_GET['code'] : '',
+                is_string($_GET['state'] ?? null) ? $_GET['state'] : ''
+            );
+            header('Location: ?action=dashboard', true, 302);
+            exit;
+        } catch (RuntimeException $error) {
+            http_response_code(400);
+            echo htmlspecialchars($error->getMessage(), ENT_QUOTES, 'UTF-8');
+        }
         break;
     default:
         // Render the real 404 page rather than bare text, so a mistyped URL

@@ -60,6 +60,19 @@ return [
 
     'app_name' => 'ReserVibe Prototype',
 
+    // Session-backed local staff accounts. Store password hashes only in the
+    // ignored .env file; a blank hash intentionally disables that account.
+    'demo_accounts' => [
+        'admin' => [
+            'username' => reservibe_env('DEMO_ADMIN_USER', 'admin'),
+            'password_hash' => reservibe_env('DEMO_ADMIN_PASSWORD_HASH', ''),
+        ],
+        'staff' => [
+            'username' => reservibe_env('DEMO_STAFF_USER', 'staff'),
+            'password_hash' => reservibe_env('DEMO_STAFF_PASSWORD_HASH', ''),
+        ],
+    ],
+
     // Module 3 — cost calculation
     'currency' => 'PHP',
     'currency_symbol' => "\u{20B1}",           // Peso sign
@@ -82,6 +95,22 @@ return [
         'allowed_mime' => ['image/jpeg', 'image/png', 'image/webp'],
     ],
 
+    // Staff-managed payment QR images. Files remain outside public/ and are
+    // streamed through the method allow-list in PaymentQrService.
+    'payment_qr' => [
+        'dir' => $root . '/data/payment-qrs',
+        'max_bytes' => 5 * 1024 * 1024,
+    ],
+
+    // Optional Google Calendar web OAuth connection. Keep secrets in .env.
+    'google_calendar' => [
+        'client_id' => reservibe_env('GOOGLE_CLIENT_ID', ''),
+        'client_secret' => reservibe_env('GOOGLE_CLIENT_SECRET', ''),
+        'redirect_uri' => reservibe_env('GOOGLE_REDIRECT_URI', 'http://127.0.0.1:8000/?action=google-callback'),
+        'calendar_id' => reservibe_env('GOOGLE_CALENDAR_ID', 'primary'),
+        'token_path' => $root . '/data/google_calendar_token.json',
+    ],
+
     // Module 5 — how the guest settles the deposit.
     //
     // The single source of truth for "what can I pay with?". The booking view
@@ -97,21 +126,21 @@ return [
             'label' => 'GCash',
             'group' => 'E-Wallet',
             'requires_proof' => true,
-            'instructions' => 'School demo only. No live GCash QR or payment processing is configured. Do not send money.',
+            'instructions' => 'Use only a resort-owner-approved QR displayed here. Payment is made outside this demo; upload the receipt for staff review.',
         ],
         [
             'code' => 'maya',
             'label' => 'Maya',
             'group' => 'E-Wallet',
             'requires_proof' => true,
-            'instructions' => 'School demo only. No live Maya QR or payment processing is configured. Do not send money.',
+            'instructions' => 'Use only a resort-owner-approved QR displayed here. Payment is made outside this demo; upload the receipt for staff review.',
         ],
         [
             'code' => 'bank_transfer',
             'label' => 'Bank Transfer',
             'group' => 'Bank',
             'requires_proof' => true,
-            'instructions' => 'School demo only. No bank account or payment processing is configured. Do not send money.',
+            'instructions' => 'Use only resort-approved payment details. Payment is made outside this demo; upload the receipt for staff review.',
         ],
         [
             'code' => 'paypal',

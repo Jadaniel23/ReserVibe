@@ -112,6 +112,14 @@ select, input[type="date"], input[type="number"] {
   padding: 0.5rem;
   box-sizing: border-box;
 }
+.payment-qr-image {
+  display: block;
+  width: min(100%, 280px);
+  max-height: 280px;
+  object-fit: contain;
+  margin: 1rem auto;
+  background: white;
+}
 
 /* --- Payment method chooser ------------------------------------------- */
 .method-grid {

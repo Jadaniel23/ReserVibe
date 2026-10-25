@@ -15,5 +15,5 @@ Response::requireMethod('GET');
 
 Response::success([
     'csrf_token' => CsrfProtection::token(),
-    'role' => $_SERVER['HTTP_X_USER_ROLE'] ?? 'guest',
+    'role' => App\Services\AuthService::role(),
 ]);

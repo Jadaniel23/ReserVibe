@@ -74,7 +74,7 @@ class GoogleCalendarService
         $this->saveToken($token);
     }
 
-    /** Push all blocking reservations and remove events for cancelled stays. */
+    /** Push confirmed reservations and remove events that are no longer confirmed. */
     public function syncAll(): array
     {
         if (!$this->connected()) throw new RuntimeException('Connect a Google account before syncing.');
@@ -83,7 +83,7 @@ class GoogleCalendarService
         $deleted = 0;
         foreach ($reservations as $reservation) {
             $eventId = $this->eventId((int) ($reservation['id'] ?? 0));
-            if (!in_array($reservation['status'] ?? '', ReservationRepository::BLOCKING_STATUSES, true)) {
+            if (($reservation['status'] ?? '') !== ReservationRepository::STATUS_CONFIRMED) {
                 $response = $this->calendarRequest('DELETE', '/events/' . $eventId);
                 if (!in_array($response['status'], [200, 204, 404, 410], true)) throw new RuntimeException('Google Calendar could not remove event for ' . ($reservation['reference'] ?? 'reservation') . '.');
                 if (in_array($response['status'], [200, 204], true)) $deleted++;
@@ -94,8 +94,14 @@ class GoogleCalendarService
                 'summary' => 'ReserVibe stay · ' . (string) ($reservation['reference'] ?? ''),
                 'description' => 'Accommodation: ' . (string) ($reservation['accommodation_name'] ?? 'Resort stay')
                     . "\nReservation status: " . (string) ($reservation['status'] ?? 'active'),
-                'start' => ['date' => (string) $reservation['check_in']],
-                'end' => ['date' => (string) $reservation['check_out']],
+                'start' => [
+                    'dateTime' => (string) $reservation['check_in'] . 'T' . (string) ($reservation['check_in_time'] ?? '14:00') . ':00',
+                    'timeZone' => (string) Config::get('timezone', 'Asia/Manila'),
+                ],
+                'end' => [
+                    'dateTime' => (string) $reservation['check_out'] . 'T' . (string) ($reservation['check_out_time'] ?? '11:00') . ':00',
+                    'timeZone' => (string) Config::get('timezone', 'Asia/Manila'),
+                ],
                 'transparency' => 'opaque',
                 'extendedProperties' => ['private' => ['reservibe_reference' => (string) ($reservation['reference'] ?? '')]],
             ];
@@ -107,6 +113,27 @@ class GoogleCalendarService
             $createdOrUpdated++;
         }
         return ['created_or_updated' => $createdOrUpdated, 'deleted' => $deleted, 'message' => 'Google Calendar sync finished.'];
+    }
+
+    /** Keep a local reservation mutation successful if the optional calendar is unavailable. */
+    public function syncAfterReservationChange(): array
+    {
+        if (!$this->configured()) {
+            return ['status' => 'skipped', 'message' => 'Google Calendar is not configured.'];
+        }
+        if (!$this->connected()) {
+            return ['status' => 'skipped', 'message' => 'Google Calendar is not connected.'];
+        }
+
+        try {
+            return ['status' => 'synced'] + $this->syncAll();
+        } catch (\Throwable $error) {
+            error_log('[reservibe calendar auto-sync] ' . $error->getMessage());
+            return [
+                'status' => 'failed',
+                'message' => 'The reservation was saved, but Google Calendar could not be updated. Retry with Sync reservations.',
+            ];
+        }
     }
 
     private function eventId(int $id): string

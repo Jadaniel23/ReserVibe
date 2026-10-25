@@ -25,14 +25,17 @@
             <button class="btn btn--primary" type="submit">Send for staff review</button>
           </form>
         </section>
-        <section class="staff-panel"><h2>Change or cancel dates</h2>
+        <section class="staff-panel"><h2>Request a change or cancellation</h2>
           <form id="manage-reservation-form" class="staff-form">
             <label class="form-label" for="manage-reference">Reservation reference</label><input class="form-input" id="manage-reference" name="reservation_reference" placeholder="RSV-0001" pattern="RSV-[0-9]{4,}" required>
             <label class="form-label" for="manage-email">Booking email</label><input class="form-input" id="manage-email" name="guest_email" type="email" required>
-            <div class="staff-form__dates"><div><label class="form-label" for="manage-in">New check-in</label><input class="form-input" id="manage-in" name="check_in" type="date"></div><div><label class="form-label" for="manage-out">New check-out</label><input class="form-input" id="manage-out" name="check_out" type="date"></div></div>
-            <button class="btn btn--primary" type="submit">Reschedule stay</button>
-            <button class="btn btn--ghost" id="guest-cancel" type="button">Cancel reservation</button>
-            <p class="staff-hint">Reschedule at least 7 days before arrival. The deposit is non-refundable within 3 days of arrival. Refund requests outside that window require staff review; refunds are subject to the resort's official cancellation policy.</p>
+            <div class="staff-form__dates"><div><label class="form-label" for="manage-in">Requested check-in</label><input class="form-input" id="manage-in" name="check_in" type="date"></div><div><label class="form-label" for="manage-out">Requested check-out</label><input class="form-input" id="manage-out" name="check_out" type="date"></div></div>
+            <label class="form-label" for="manage-reason">Reason for request</label><textarea class="form-input" id="manage-reason" name="reason" maxlength="500" rows="3" required></textarea>
+            <button class="btn btn--primary" type="submit">Send reschedule request</button>
+            <button class="btn btn--ghost" id="guest-cancel" type="button">Request cancellation</button>
+            <button class="btn btn--ghost" id="check-change-status" type="button">Check request status</button>
+            <div id="change-request-status" class="staff-hint" aria-live="polite"></div>
+            <p class="staff-hint">A staff member reviews requests. Rescheduling requires at least 7 days before arrival and an available date range. Cancellation terms are checked during review; refunds are not processed by this demo.</p>
           </form>
         </section>
       </div>

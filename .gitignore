@@ -7,5 +7,10 @@
 data/payments.json
 data/payment_proofs.json
 data/google_calendar_token.json
+data/payment_qrs.json
+data/payment-qrs/
+data/change_requests.json
+data/.change-requests.lock
 data/login_throttle.json
+data/login_attempts.json
 public/uploads/payment-proofs/

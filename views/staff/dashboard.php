@@ -8,6 +8,7 @@ $csrfToken = \App\Services\CsrfProtection::token();
   <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Staff desk | ReserVibe</title>
   <link rel="stylesheet" href="<?php echo \App\Helpers\Assets::url('/assets/css/style.css'); ?>">
+  <link rel="stylesheet" href="<?php echo \App\Helpers\Assets::url('/assets/css/staff.css'); ?>">
 </head>
 <body data-staff-role="<?php echo htmlspecialchars($role, ENT_QUOTES, 'UTF-8'); ?>">
   <main class="staff-main container" id="main-content">
@@ -17,6 +18,24 @@ $csrfToken = \App\Services\CsrfProtection::token();
     </header>
     <p class="staff-message" id="staff-message" aria-live="polite" role="status"></p>
     <section class="staff-kpis" id="staff-kpis" aria-label="Reservation summary"><p>Loading summary...</p></section>
+    <section class="staff-panel staff-panel--wide">
+      <header class="staff-panel__header"><div><h2>Reservation calendar</h2><p class="staff-hint">Select a booking to see its details and make a staff-approved date change or cancellation.</p></div></header>
+      <div id="staff-calendar"></div>
+    </section>
+    <section class="staff-panel staff-panel--wide">
+      <header class="staff-panel__header"><div><h2>Guest change requests</h2><p class="staff-hint">Review requested cancellations and date changes before they affect a reservation.</p></div><button class="btn btn--ghost btn--sm" id="refresh-change-requests" type="button">Refresh</button></header>
+      <div id="change-request-list"><p>Loading requests...</p></div>
+    </section>
+    <section class="staff-panel staff-panel--wide">
+      <header class="staff-panel__header"><div><h2>Payment QR codes</h2><p class="staff-hint">Upload only a payment QR code approved by the resort owner. Guests can scan it and submit a receipt for manual review.</p></div></header>
+      <div id="payment-qr-list"><p>Loading QR settings...</p></div>
+      <form id="payment-qr-form" class="staff-inline-form" enctype="multipart/form-data">
+        <label class="form-label" for="payment-qr-method">Payment method</label><select class="form-input" id="payment-qr-method" name="method" required></select>
+        <label class="form-label" for="payment-qr-image">QR image (JPEG, PNG, WebP; max 5 MB)</label><input class="form-input" id="payment-qr-image" type="file" name="qr_image" accept="image/jpeg,image/png,image/webp" required>
+        <button class="btn btn--primary" type="submit">Upload / replace QR</button>
+      </form>
+      <p class="staff-hint">The app stores payment proofs and staff decisions. It does not receive or verify funds automatically.</p>
+    </section>
     <?php if ($role === 'admin'): ?>
     <section class="staff-panel staff-panel--wide">
       <header class="staff-panel__header"><div><h2>Maintain package catalogue</h2><p class="staff-hint">Changes update the guest catalogue and server-calculated booking rates. Inactive packages stay on existing reservations.</p></div><button class="btn btn--ghost btn--sm" id="refresh-catalog" type="button">Refresh packages</button></header>
@@ -99,7 +118,21 @@ $csrfToken = \App\Services\CsrfProtection::token();
         </div>
       </div>
     </div>
+    <div class="modal-overlay" id="reservation-modal" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="reservation-modal-title">
+      <div class="modal-content">
+        <header class="modal-header"><h2 id="reservation-modal-title" class="modal-title">Reservation details</h2><button class="modal-close" id="reservation-modal-close" type="button" aria-label="Close">×</button></header>
+        <div class="modal-body"><div id="reservation-modal-details"></div>
+          <form id="staff-reschedule-form" class="staff-form hidden">
+            <label class="form-label" for="staff-reschedule-in">New check-in</label><input class="form-input" id="staff-reschedule-in" type="date" required>
+            <label class="form-label" for="staff-reschedule-out">New check-out</label><input class="form-input" id="staff-reschedule-out" type="date" required>
+            <button class="btn btn--primary" type="submit">Save date change</button>
+          </form>
+          <div class="modal-footer"><button class="btn btn--primary" id="staff-edit-reservation" type="button">Edit dates</button><button class="btn btn--ghost" id="staff-cancel-reservation" type="button">Cancel reservation</button></div>
+        </div>
+      </div>
+    </div>
   </main>
+  <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.js"></script>
   <script src="<?php echo \App\Helpers\Assets::url('/assets/js/dashboard.js'); ?>"></script>
 </body>
 </html>
