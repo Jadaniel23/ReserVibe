@@ -81,6 +81,16 @@ return [
     // Module 4 — temporary holds
     'hold_minutes' => 90,                      // slot lock lifetime before payment proof
 
+    // Server-enforced booking limits and resort operating policy.
+    'booking_rules' => [
+        'max_stay_nights' => 30,
+        'max_advance_days' => 365,
+        'free_reschedule_days' => 7,
+        'deposit_non_refundable_days' => 3,
+        'check_in_time' => '14:00',
+        'check_out_time' => '11:00',
+    ],
+
     // Add-on catalogue. The client sends add-on *codes*; the server decides
     // what they cost, so a tampered request cannot change the price.
     'addons' => [

@@ -167,6 +167,11 @@ class ReservationService
 
                 $checkIn = (string) ($hold['check_in'] ?? '');
                 $checkOut = (string) ($hold['check_out'] ?? '');
+                $dateErrors = BookingRules::dateErrors($checkIn, $checkOut);
+                if ($dateErrors !== []) {
+                    $this->holds->writeAll($holds);
+                    return ['ok' => false, 'message' => 'Booking dates do not meet the stay limits.', 'errors' => $dateErrors];
+                }
                 $nights = $this->calculator->nightsBetween($checkIn, $checkOut) ?? 1;
 
                 $reservations = $this->reservations->all();

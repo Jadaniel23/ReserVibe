@@ -15,6 +15,7 @@ use App\Repositories\HoldRepository;
 use App\Repositories\ReservationRepository;
 use App\Services\AvailabilityService;
 use App\Services\CostCalculator;
+use App\Services\BookingRules;
 use App\Services\CsrfProtection;
 
 require_once __DIR__ . '/../bootstrap.php';
@@ -52,6 +53,9 @@ if ($checkIn !== null && $checkIn < date('Y-m-d')) {
 
 if ($errors === [] && $checkOut <= $checkIn) {
     $errors['check_out'] = 'check_out must be later than check_in.';
+}
+if ($checkIn !== null && $checkOut !== null) {
+    $errors = array_merge($errors, BookingRules::dateErrors($checkIn, $checkOut));
 }
 
 $calculator = new CostCalculator();

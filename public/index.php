@@ -56,6 +56,7 @@ switch ($action) {
     case 'confirmation':
         Response::render('guest/confirmation');
         break;
+    case 'login':
     case 'staff-login':
         if (in_array(App\Services\AuthService::role(), ['staff', 'admin'], true)) {
             header('Location: ?action=dashboard', true, 302);

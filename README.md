@@ -113,7 +113,7 @@ A fresh copy will **not** contain a `.env` file because it is gitignored. Guest 
 
 ## Step 3 — Create your private `.env`
 
-The guest pages work without `.env`, but staff login requires local password hashes. Copy the example file, generate a hash for each password, and paste each output into its matching `DEMO_*_PASSWORD_HASH` line. The `.env` file is gitignored and must stay private.
+The guest pages work without `.env`, but staff login requires local password hashes. Copy the example file, generate a hash for each password, and paste each output into its matching `DEMO_*_PASSWORD_HASH` line. The `.env` file is gitignored and must stay private. The login page is available at `?action=login` (also `?action=staff-login`).
 
 ```bash
 cp .env.example .env        # macOS / Linux / Git Bash
